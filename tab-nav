@@ -1,0 +1,53 @@
+// Select all elements with the class 'cmp-tabs__title-wrap'
+const tabTitleElements = document.querySelectorAll('.cmp-tabs__title-wrap');
+
+// Track the last tab clicked to avoid duplicate firing
+let lastClickedTab = null;
+
+// Add click event listener to each element
+tabTitleElements.forEach(tabTitle => {
+    tabTitle.addEventListener('click', () => {
+        // Find the closest parent <li> element that has the 'data-aa-class' and 'data-aa-type' attributes
+        const parentLi = tabTitle.closest('li[role="tab"]');
+
+        if (parentLi) {
+            // Capture the tab name, data-aa-class, and data-aa-type
+            let tabName = tabTitle.textContent.trim();  // Capture the tab name (trim to remove extra spaces)
+            const aaClass = parentLi.getAttribute('data-aa-class') || 'default-class';
+            const aaType = parentLi.getAttribute('data-aa-type') || 'default-type';
+
+            // Convert tabName to lowercase and replace spaces with underscores
+            tabName = tabName.toLowerCase().replace(/\s+/g, '_');
+
+            // Check if the same tab was clicked consecutively to prevent duplicate events
+            if (lastClickedTab === tabName) {
+                return;  // Prevent duplicate event firing for the same tab click
+            }
+
+            // Set the last clicked tab
+            lastClickedTab = tabName;
+
+            // Prepare the event value in the required format
+            const eventValue = `view:tab-nav:${tabName}`;
+
+            // Set the values to the clicked_element and other Tealium data layer variables
+            window.utag_data = window.utag_data || {};  // Ensure utag_data exists
+            window.utag_data.clicked_element = eventValue;  // Assign the event value to clicked_element
+            window.utag_data.data_aa_class = aaClass;  // Assign data-aa-class value
+            window.utag_data.data_aa_type = aaType;  // Assign data-aa-type value
+
+            // Send the event via Tealium, only with 'link' event
+            window.utag.link({
+                'tealium_event': 'link',  // Push only the 'link' event to Tealium
+                'clicked_element': eventValue,  // Push the clicked_element value to Tealium
+                'data_aa_class': aaClass,  // Include the data-aa-class value
+                'data_aa_type': aaType  // Include the data-aa-type value
+            });
+
+            // Reset the lastClickedTab after a short delay (to allow re-clicks)
+            setTimeout(() => {
+                lastClickedTab = null;
+            }, 1000);  // Adjust this delay based on your needs
+        }
+    });
+});
